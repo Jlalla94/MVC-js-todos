@@ -105,10 +105,11 @@ class ListView extends EventEmitter {
       clearCompleted: $(".clear-completed"),
       toDoCount: $(".todo-count").find("strong"),
       toDoList: $(".todo-list"),
-      footer: $(".footer")
+      footer: $(".footer"),
+      filters: $(".filters")
     };
 
-    // attach model listeners
+    //model listeners
     model
       .on("itemAdded", listItem => {
         this.addItemToList(listItem);
@@ -123,10 +124,7 @@ class ListView extends EventEmitter {
       .on("deleteAllComplited", () => this.rebuildList())
       .on("deleteAllComplited", () => this.updateListParams());
 
-    //attach listeners to HTML controls
-    // elements.list.addEventListener("change", e =>
-    //   this.emit("listModified", e.target.selectedIndex)
-    // );
+    //Listeners to HTML controls
     this._elements.addItem
       .focusout(event => {
         if (
@@ -154,9 +152,8 @@ class ListView extends EventEmitter {
         }
       });
 
-    // elements.delButton.addEventListener("click", () =>
-    //   this.emit("delButtonClicked")
-    // );
+    //Only View Events
+    $(window).on("hashchange", () => this.rebuildList());
   }
 
   show() {
@@ -165,6 +162,22 @@ class ListView extends EventEmitter {
   }
 
   addItemToList({ id: id, text: text, status: status }) {
+    const hash = window.location.hash;
+    const filters = this._elements.filters;
+    filters.children("a").removeClass("selected");
+    filters.find('a[href="' + hash + '"]').addClass("selected");
+    if (hash.replace("#/", "") !== "") {
+      if (hash.replace("#/", "") === "active") {
+        if (status !== "") {
+          return;
+        }
+      }
+      if (hash.replace("#/", "") === "completed") {
+        if (status === "") {
+          return;
+        }
+      }
+    }
     let viewItem = $(`
     <li class="${status}">
     <div class="view">
@@ -197,7 +210,9 @@ class ListView extends EventEmitter {
     const toDoList = this._elements.toDoList;
     const items = this._model.getItems();
     toDoList.html("");
-    $.each(items, (index, item) => this.addItemToList(item));
+    $.each(items, (index, item) => {
+      this.addItemToList(item);
+    });
   }
 
   updateListParams() {
@@ -262,7 +277,7 @@ class ListController {
     this._model = model;
     this._view = view;
 
-    // view.on("listModified", idx => this.updateSelected(idx));
+    // view liseners
     view.on("itemCreate", item => this.addItem(item));
     view.on("deleteButtonClicked", id => this.deleteItem(id));
     view.on("checkboxClicked", item => this.updateItem(item));
