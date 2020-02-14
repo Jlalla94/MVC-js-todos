@@ -29,6 +29,19 @@ class ListModel extends EventEmitter {
     return Object.assign({}, this._items);
   }
 
+  getItemListParams() {
+    let itemListParams = {
+      countActive: 0,
+      countDeseble: 0
+    };
+    $.each(this._items, (index, item) =>
+      item.status === ""
+        ? itemListParams.countActive++
+        : itemListParams.countDeseble++
+    );
+    return itemListParams;
+  }
+
   addItem({ id: id = Date.now(), text: text, status: status = "" }) {
     this._items[id] = { id: id, text: text, status: status };
     LocalStore.update(this.storeName, this._items);
@@ -47,17 +60,12 @@ class ListModel extends EventEmitter {
     this.emit("itemUpdated", { id: id, text: text, status: status });
   }
 
-  getItemListParams() {
-    let itemListParams = {
-      countActive: 0,
-      countDeseble: 0
-    };
-    $.each(this._items, (index, item) =>
-      item.status === ""
-        ? itemListParams.countActive++
-        : itemListParams.countDeseble++
-    );
-    return itemListParams;
+  updateAllItemsStatus(status) {
+    for (let item in this._items) {
+      this._items[item]["status"] = status;
+    }
+    LocalStore.update(this.storeName, this._items);
+    this.emit("itemAdded", { status });
   }
 
   // get selectedIndex() {
@@ -97,8 +105,8 @@ class ListView extends EventEmitter {
         this.updateListParams();
       })
       .on("itemRemoved", () => this.rebuildList())
-      .on("itemUpdated", () => this.rebuildList());
-
+      .on("itemUpdated", () => this.rebuildList())
+      .on("itemAdded", () => this.rebuildList());
     //attach listeners to HTML controls
     // elements.list.addEventListener("change", e =>
     //   this.emit("listModified", e.target.selectedIndex)
@@ -172,7 +180,6 @@ class ListView extends EventEmitter {
     const toDoList = this._elements.toDoList;
     const items = this._model.getItems();
     toDoList.html("");
-
     $.each(items, (index, item) => this.addItemToList(item));
     this.updateListParams();
   }
@@ -180,23 +187,52 @@ class ListView extends EventEmitter {
   updateListParams() {
     const listParams = this._model.getItemListParams();
     const toDoCount = this._elements.toDoCount;
+
+    this.checkMainView(listParams);
+    this.checkToggleAll(listParams.countActive);
+    this.checkClearCompleted(listParams.countDeseble);
+    toDoCount.text(listParams.countActive);
+  }
+
+  checkMainView({ countActive: countActive, countDeseble: countDeseble }) {
     const main = this._elements.main;
     const footer = this._elements.footer;
-    const clearCompleted = this._elements.clearCompleted;
-    const toggleAll = this._elements.toggleAll;
-    console.log(123);
-    if (listParams.countActive + listParams.countDeseble === 0) {
+
+    if (countActive + countDeseble === 0) {
       main.css("display", "none");
       footer.css("display", "none");
-    } else if (listParams.countActive + listParams.countDeseble === 1) {
+    } else if (countActive + countDeseble > 0) {
       main.css("display", "block");
       footer.css("display", "block");
     }
-    toDoCount.text(listParams.countActive);
-    listParams.countDeseble > 0
-      ? clearCompleted.css("display", "block")
-      : clearCompleted.css("display", "none");
-    toggleAll.attr("checked", listParams.countActive === 0);
+  }
+
+  checkToggleAll(countActive) {
+    const toggleAll = this._elements.toggleAll;
+
+    if (countActive > 0) {
+      toggleAll.attr("checked", false);
+      toggleAll.on("click", () => {
+        this.emit("toggleAllClicked", "completed");
+        this.updateListParams();
+      });
+    } else {
+      toggleAll.attr("checked", true);
+      toggleAll.on("click", () => {
+        this.emit("toggleAllClicked", "");
+        this.updateListParams();
+      });
+    }
+  }
+
+  checkClearCompleted(countDeseble) {
+    const clearCompleted = this._elements.clearCompleted;
+
+    if (countDeseble > 0) {
+      clearCompleted.css("display", "block");
+    } else {
+      clearCompleted.css("display", "none");
+    }
   }
 }
 
@@ -213,6 +249,7 @@ class ListController {
     view.on("itemCreate", item => this.addItem(item));
     view.on("deleteButtonClicked", id => this.deleteItem(id));
     view.on("checkboxClicked", item => this.updateItem(item));
+    view.on("toggleAllClicked", status => this.updateAllItemsStatus(status));
   }
 
   addItem(item) {
@@ -232,8 +269,13 @@ class ListController {
       this._model.updateItem(item);
     }
   }
+  updateAllItemsStatus(status) {
+    this._model.updateAllItemsStatus(status);
+  }
 }
 
 const model = new ListModel(),
   view = new ListView(model),
   controller = new ListController(model, view);
+
+view.show();
