@@ -65,7 +65,17 @@ class ListModel extends EventEmitter {
       this._items[item]["status"] = status;
     }
     LocalStore.update(this.storeName, this._items);
-    this.emit("itemAdded", { status });
+    this.emit("updateAll", { status });
+  }
+
+  deleteAllComplited() {
+    for (let item in this._items) {
+      if (this._items[item]["status"] === "completed") {
+        delete this._items[item];
+      }
+    }
+    LocalStore.update(this.storeName, this._items);
+    this.emit("deleteAllComplited", {});
   }
 
   // get selectedIndex() {
@@ -105,8 +115,14 @@ class ListView extends EventEmitter {
         this.updateListParams();
       })
       .on("itemRemoved", () => this.rebuildList())
+      .on("itemRemoved", () => this.updateListParams())
       .on("itemUpdated", () => this.rebuildList())
-      .on("itemAdded", () => this.rebuildList());
+      .on("itemUpdated", () => this.updateListParams())
+      .on("updateAll", () => this.rebuildList())
+      .on("updateAll", () => this.updateListParams())
+      .on("deleteAllComplited", () => this.rebuildList())
+      .on("deleteAllComplited", () => this.updateListParams());
+
     //attach listeners to HTML controls
     // elements.list.addEventListener("change", e =>
     //   this.emit("listModified", e.target.selectedIndex)
@@ -145,6 +161,7 @@ class ListView extends EventEmitter {
 
   show() {
     this.rebuildList();
+    this.updateListParams();
   }
 
   addItemToList({ id: id, text: text, status: status }) {
@@ -181,7 +198,6 @@ class ListView extends EventEmitter {
     const items = this._model.getItems();
     toDoList.html("");
     $.each(items, (index, item) => this.addItemToList(item));
-    this.updateListParams();
   }
 
   updateListParams() {
@@ -211,16 +227,14 @@ class ListView extends EventEmitter {
     const toggleAll = this._elements.toggleAll;
 
     if (countActive > 0) {
-      toggleAll.attr("checked", false);
+      toggleAll.prop("checked", false);
       toggleAll.on("click", () => {
         this.emit("toggleAllClicked", "completed");
-        this.updateListParams();
       });
     } else {
-      toggleAll.attr("checked", true);
+      toggleAll.prop("checked", true);
       toggleAll.on("click", () => {
         this.emit("toggleAllClicked", "");
-        this.updateListParams();
       });
     }
   }
@@ -230,6 +244,9 @@ class ListView extends EventEmitter {
 
     if (countDeseble > 0) {
       clearCompleted.css("display", "block");
+      clearCompleted.on("click", () => {
+        this.emit("deleteComplited", {});
+      });
     } else {
       clearCompleted.css("display", "none");
     }
@@ -250,6 +267,7 @@ class ListController {
     view.on("deleteButtonClicked", id => this.deleteItem(id));
     view.on("checkboxClicked", item => this.updateItem(item));
     view.on("toggleAllClicked", status => this.updateAllItemsStatus(status));
+    view.on("deleteComplited", () => this.deleteAllComplited());
   }
 
   addItem(item) {
@@ -269,8 +287,13 @@ class ListController {
       this._model.updateItem(item);
     }
   }
+
   updateAllItemsStatus(status) {
     this._model.updateAllItemsStatus(status);
+  }
+
+  deleteAllComplited() {
+    this._model.deleteAllComplited();
   }
 }
 
