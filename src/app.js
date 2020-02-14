@@ -162,17 +162,17 @@ class ListView extends EventEmitter {
   }
 
   addItemToList({ id: id, text: text, status: status }) {
-    const hash = window.location.hash;
+    const hash = window.location.hash.replace("#/", "");
     const filters = this._elements.filters;
-    filters.children("a").removeClass("selected");
-    filters.find('a[href="' + hash + '"]').addClass("selected");
-    if (hash.replace("#/", "") !== "") {
-      if (hash.replace("#/", "") === "active") {
+    filters.find(".selected").removeClass("selected");
+    filters.find('a[href="#/' + hash + '"]').addClass("selected");
+    if (hash !== "") {
+      if (hash === "active") {
         if (status !== "") {
           return;
         }
       }
-      if (hash.replace("#/", "") === "completed") {
+      if (hash === "completed") {
         if (status === "") {
           return;
         }
