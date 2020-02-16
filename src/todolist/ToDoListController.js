@@ -1,3 +1,5 @@
+import $ from "jquery";
+
 class ListController {
   /**
    * @param {ListModel} model
@@ -13,6 +15,27 @@ class ListController {
     view.on("checkboxClicked", item => this.updateItem(item));
     view.on("toggleAllClicked", status => this.updateAllItemsStatus(status));
     view.on("deleteComplited", () => this.deleteAllComplited());
+    view.on("hashChange", () => this._view.rebuildList(this._model.getItems()));
+
+    //ModelLiseners
+    model
+      .on("itemAdded", listItem => {
+        view.addItemToList(listItem);
+        view.updateListParams(model.getItemListParams());
+      })
+      .on("itemRemoved", () => view.updateListParams(model.getItemListParams()))
+      .on("itemUpdated", () => view.updateListParams(model.getItemListParams()))
+      .on("updateAll", () => view.rebuildList(this._model.getItems()))
+      .on("updateAll", () => view.updateListParams(model.getItemListParams()))
+      .on("deleteAllComplited", () => view.rebuildList(this._model.getItems()))
+      .on("deleteAllComplited", () =>
+        view.updateListParams(model.getItemListParams(this._model.getItems()))
+      );
+  }
+
+  init() {
+    this._view.updateListParams(this._model.getItemListParams());
+    this._view.rebuildList(this._model.getItems());
   }
 
   /**

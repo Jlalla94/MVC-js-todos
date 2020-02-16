@@ -2,12 +2,8 @@ import $ from "jquery";
 import { EventEmitter } from "/src/service/EventEmitter";
 
 class ListView extends EventEmitter {
-  /**
-   * @param {ListModel} model
-   */
-  constructor(model) {
+  constructor() {
     super();
-    this._model = model;
     this._elements = {
       main: $(".main"),
       toggleAll: $("#toggle-all"),
@@ -19,19 +15,6 @@ class ListView extends EventEmitter {
       filters: $(".filters")
     };
     this.hash = this.setHash();
-
-    //model listeners
-    model
-      .on("itemAdded", listItem => {
-        this.addItemToList(listItem);
-        this.updateListParams();
-      })
-      .on("itemRemoved", () => this.updateListParams())
-      .on("itemUpdated", () => this.updateListParams())
-      .on("updateAll", () => this.rebuildList())
-      .on("updateAll", () => this.updateListParams())
-      .on("deleteAllComplited", () => this.rebuildList())
-      .on("deleteAllComplited", () => this.updateListParams());
 
     //Listeners to HTML controls
     this._elements.addItem
@@ -61,19 +44,10 @@ class ListView extends EventEmitter {
         }
       });
 
-    //Only View Events
     $(window).on("hashchange", () => {
       this.setHash();
-      this.rebuildList();
+      this.emit("hashChange");
     });
-  }
-
-  /**
-   * init function
-   */
-  show() {
-    this.rebuildList();
-    this.updateListParams();
   }
 
   setHash() {
@@ -128,18 +102,18 @@ class ListView extends EventEmitter {
     this._elements.toDoList.append(viewItem);
   }
 
-  rebuildList() {
+  rebuildList(objectItems) {
     this.setHash();
     const toDoList = this._elements.toDoList;
-    const items = this._model.getItems();
+    const items = objectItems;
     toDoList.html("");
     $.each(items, (index, item) => {
       this.addItemToList(item);
     });
   }
 
-  updateListParams() {
-    const listParams = this._model.getItemListParams();
+  updateListParams(objectParams) {
+    const listParams = objectParams;
     const toDoCount = this._elements.toDoCount;
 
     this.checkMainView(listParams);
