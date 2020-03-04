@@ -60,7 +60,7 @@ class ListView extends EventEmitter {
   /**
    * @param {object} param0
    */
-  addItemToList({ id: id, text: text, status: status }) {
+  addItemToList({ id, text, status }) {
     if (this.hash !== "") {
       if (this.hash === "active") {
         if (status !== "") {
@@ -125,7 +125,7 @@ class ListView extends EventEmitter {
   /**
    * @param {object} param0
    */
-  checkMainView({ countActive: countActive, countDeseble: countDeseble }) {
+  checkMainView({ countActive, countDeseble }) {
     const main = this._elements.main;
     const footer = this._elements.footer;
 

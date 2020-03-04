@@ -38,7 +38,7 @@ class ListModel extends EventEmitter {
   /**
    * @param {object} param0
    */
-  addItem({ id: id = Date.now(), text: text, status: status = "" }) {
+  addItem({ id: id = Date.now(), text, status: status = "" }) {
     this._items[id] = { id: id, text: text, status: status };
     LocalStore.update(this.storeName, this._items);
     this.emit("itemAdded", { id: id, text: text, status: status });
@@ -56,7 +56,7 @@ class ListModel extends EventEmitter {
   /**
    * @param {object} param0
    */
-  updateItem({ id: id, text: text, status: status }) {
+  updateItem({ id, text, status }) {
     this._items[id] = { id: id, text: text, status: status };
     LocalStore.update(this.storeName, this._items);
     this.emit("itemUpdated", { id: id, text: text, status: status });

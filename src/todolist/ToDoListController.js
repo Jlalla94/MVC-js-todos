@@ -1,5 +1,3 @@
-import $ from "jquery";
-
 class ListController {
   /**
    * @param {ListModel} model
